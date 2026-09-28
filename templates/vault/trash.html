@@ -1,0 +1,16 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras humanize %}
+{% block title %}Trash · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Trash</h1><p class="sub">Deleted documents are kept for 30 days, then purged automatically.</p></div>
+  {% if docs %}<form method="post" action="{% url 'vault:trash_empty' %}" data-confirm="Permanently delete everything in the trash? This cannot be undone.">{% csrf_token %}<button class="btn btn-danger" type="submit">{% icon "trash" 16 %} Empty trash</button></form>{% endif %}</div>
+<div class="card">
+  {% for d in docs %}
+  <div class="tree-row"><span class="doc-icon">{% category_icon d.category 18 %}</span>
+    <div style="flex:1;min-width:0"><span class="doc-title">{{ d.title }}</span><div class="doc-meta">Deleted {{ d.deleted_at|naturaltime }} · {{ d.days_in_trash_left }} day{{ d.days_in_trash_left|pluralize }} left · {{ d.size|filesizeformat }}</div></div>
+    <form class="inline-form" method="post" action="{% url 'vault:restore' d.pk %}">{% csrf_token %}<button class="btn btn-sm" type="submit">Restore</button></form>
+    <form class="inline-form" method="post" action="{% url 'vault:delete' d.pk %}" data-confirm="Permanently delete '{{ d.title }}'?">{% csrf_token %}<button class="btn btn-sm btn-danger" type="submit">Delete forever</button></form>
+  </div>
+  {% empty %}<div class="empty">{% icon "trash" 38 %}<h3>Trash is empty</h3><p>Documents you delete will wait here before being purged.</p></div>{% endfor %}
+</div>
+{% endblock %}

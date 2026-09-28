@@ -1,0 +1,35 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras humanize %}
+{% block title %}Activity log · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Activity log</h1><p class="sub">A tamper-resistant record of everything that touches your vault.</p></div>
+  <a class="btn" href="{% url 'vault:activity_export' %}?{{ qs }}">{% icon "download" 16 %} Export CSV</a></div>
+<div class="tabs">
+  <a href="?" class="{% if not f.type %}active{% endif %}">All</a>
+  <a href="?type=documents" class="{% if f.type == 'documents' %}active{% endif %}">Documents</a>
+  <a href="?type=sharing" class="{% if f.type == 'sharing' %}active{% endif %}">Sharing</a>
+  <a href="?type=security" class="{% if f.type == 'security' %}active{% endif %}">Security</a>
+</div>
+<form class="card card-body" method="get" style="margin-bottom:1rem">
+  {% if f.type %}<input type="hidden" name="type" value="{{ f.type }}">{% endif %}
+  <div class="filters">
+    <div class="field" style="flex:2"><label for="a-q">Search</label><input class="input" id="a-q" name="q" value="{{ f.q }}" placeholder="Document, details, IP address…"></div>
+    <div class="field"><label for="a-act">Action</label><select class="input" id="a-act" name="action"><option value="">Any</option>{% for v, l in actions %}<option value="{{ v }}" {% if f.action == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="field check" style="flex:0 0 auto;align-self:center;margin-top:1.2rem"><input class="checkbox" type="checkbox" id="a-hv" name="hide_views" value="1" {% if f.hide_views == '1' %}checked{% endif %}><label for="a-hv">Hide views</label></div>
+    <button class="btn btn-primary" type="submit">Apply</button>
+  </div>
+</form>
+<div class="card">
+  {% if page.object_list %}
+  <div class="table-wrap"><table class="table"><thead><tr><th>When</th><th>Event</th><th>Document</th><th>Details</th><th>IP</th></tr></thead><tbody>
+    {% for e in page %}<tr>
+      <td class="nowrap small" title="{{ e.created_at|date:'c' }}">{{ e.created_at|date:"d M Y H:i" }}<div class="muted">{{ e.created_at|naturaltime }}</div></td>
+      <td><span class="badge {% if e.action == 'login_failed' or e.action == 'login_blocked' or e.action == 'delete' %}badge-danger{% elif e.action == 'public_download' or e.action == 'public_view' %}badge-warn{% elif e.action == 'upload' or e.action == 'verify' or e.action == 'certify' %}badge-ok{% endif %}">{{ e.get_action_display }}</span>
+        {% if e.user and e.user != request.user %}<div class="doc-meta">by {{ e.user|name_of }}</div>{% elif not e.user and e.document_id %}<div class="doc-meta">anonymous</div>{% endif %}</td>
+      <td>{% if e.document %}<a href="{{ e.document.get_absolute_url }}">{{ e.document_title }}</a>{% else %}{{ e.document_title|default:"—" }}{% endif %}</td>
+      <td class="small muted">{{ e.details|default:"—" }}</td><td class="mono small">{{ e.ip_address|default:"—" }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% include "partials/_pagination.html" %}
+  {% else %}<div class="empty">{% icon "activity" 38 %}<h3>No matching activity</h3></div>{% endif %}
+</div>
+{% endblock %}

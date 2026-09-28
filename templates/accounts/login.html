@@ -1,0 +1,26 @@
+{% extends "layouts/public.html" %}
+{% block title %}Sign in · {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex,follow{% endblock %}
+{% block content %}
+<div class="narrow">
+  <div class="card auth-card">
+    <h1>Welcome back</h1>
+    <p class="muted">Sign in to your vault.</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      {% include "partials/_form_errors.html" %}
+      {% include "partials/_field.html" with field=form.username %}
+      <div class="field">
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        <div class="pw-wrap">{{ form.password }}<button class="btn btn-ghost btn-sm pw-toggle" type="button" data-pw-toggle>Show</button></div>
+        {{ form.password.errors }}
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+    </form>
+    <p class="small" style="margin:1rem 0 0"><a href="{% url 'accounts:password_reset' %}">Forgot your password?</a></p>
+    <hr>
+    <p class="small muted" style="margin:0">New here? <a href="{% url 'accounts:register' %}">Create an account</a></p>
+  </div>
+</div>
+{% endblock %}

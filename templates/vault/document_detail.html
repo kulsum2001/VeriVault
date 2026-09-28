@@ -1,0 +1,176 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras humanize %}
+{% block title %}{{ doc.title }} · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{% url 'vault:documents' %}">Documents</a>{% if doc.folder and is_owner %} / <a href="{{ doc.folder.get_absolute_url }}">{{ doc.folder.path }}</a>{% endif %}</div>
+    <h1>{{ doc.title }}</h1>
+    <div class="row" style="margin-top:.4rem">
+      <span class="badge">{{ doc.get_category_display }}</span>
+      {% if doc.status == 'archived' %}<span class="badge">Archived</span>{% elif doc.status == 'trashed' %}<span class="badge badge-danger">In trash</span>{% endif %}
+      {% expiry_badge doc %}
+      {% if doc.sensitivity != 'standard' %}<span class="badge badge-brass">{% icon "lock" 12 %} {{ doc.sensitivity|title }}</span>{% endif %}
+      {% if not is_owner %}<span class="badge badge-info">Shared by {{ doc.owner|name_of }} · {% if can_download %}can download{% else %}view only{% endif %}</span>{% endif %}
+    </div>
+  </div>
+  <div class="row">
+    {% if can_download %}<a class="btn btn-primary" href="{% url 'vault:download' doc.pk %}">{% icon "download" 16 %} Download</a>{% endif %}
+    {% if is_owner %}
+      <form class="inline-form" method="post" action="{% url 'vault:favorite' doc.pk %}">{% csrf_token %}<button class="btn btn-icon" type="submit" aria-label="Toggle favourite" title="Favourite"><span class="star {% if doc.is_favorite %}on{% endif %}">{% icon "star" 18 %}</span></button></form>
+      <a class="btn" href="{% url 'vault:edit' doc.pk %}">{% icon "edit" 16 %} Edit</a>
+      <div class="dropdown"><button class="btn" type="button" data-dropdown aria-expanded="false">More</button>
+        <div class="dropdown-menu">
+          <a href="{% url 'vault:version_new' doc.pk %}">{% icon "refresh" 16 %} Upload new version</a>
+          {% if doc.status == 'trashed' %}
+            <form method="post" action="{% url 'vault:restore' doc.pk %}">{% csrf_token %}<button type="submit">{% icon "history" 16 %} Restore from trash</button></form>
+            <form method="post" action="{% url 'vault:delete' doc.pk %}" data-confirm="Permanently delete this document and all versions? This cannot be undone.">{% csrf_token %}<button type="submit">{% icon "trash" 16 %} Delete permanently</button></form>
+          {% else %}
+            <form method="post" action="{% url 'vault:archive' doc.pk %}">{% csrf_token %}<button type="submit">{% icon "archive" 16 %} {% if doc.status == 'archived' %}Unarchive{% else %}Archive{% endif %}</button></form>
+            <hr>
+            <form method="post" action="{% url 'vault:trash_doc' doc.pk %}" data-confirm="Move this document to the trash? Its share links will be revoked.">{% csrf_token %}<button type="submit">{% icon "trash" 16 %} Move to trash</button></form>
+          {% endif %}
+        </div></div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="split split-wide">
+  <div class="col">
+    <div class="card">
+      <div class="card-head"><h2>Preview</h2>{% if doc.can_preview and not locked %}<a class="small" href="{% url 'vault:preview' doc.pk %}" target="_blank" rel="noopener">Open in new tab</a>{% endif %}</div>
+      <div class="preview">
+        {% if locked %}
+          <div class="locked">{% icon "lock" 34 %}<h3>Sensitive document</h3><p class="muted">Re-enter your password to unlock preview and download.</p><a class="btn btn-primary" href="{% url 'accounts:reauth' %}?next={{ request.get_full_path|urlencode }}">Unlock for 10 minutes</a></div>
+        {% elif doc.can_preview %}
+          {% if doc.is_image %}<img src="{% url 'vault:preview' doc.pk %}" alt="Preview of {{ doc.title }}">
+          {% else %}<iframe src="{% url 'vault:preview' doc.pk %}" title="Preview of {{ doc.title }}"></iframe>{% endif %}
+        {% else %}
+          <div class="locked">{% icon "file" 34 %}<h3>No preview available</h3><p class="muted">{{ doc.original_name }} ({{ doc.extension|upper|default:"FILE" }}) can be downloaded but not previewed in the browser.</p></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Details</h2></div>
+      <div class="card-body">
+        <dl class="kv">
+          {% if doc.description %}<dt>Description</dt><dd>{{ doc.description|linebreaksbr }}</dd>{% endif %}
+          <dt>File</dt><dd>{{ doc.original_name }} · {{ doc.size|filesizeformat }} · {{ doc.content_type|default:"unknown type" }}</dd>
+          {% if doc.issuer %}<dt>Issued by</dt><dd>{{ doc.issuer }}</dd>{% endif %}
+          {% if doc.reference_number %}<dt>Reference</dt><dd class="mono">{{ doc.reference_number }}</dd>{% endif %}
+          {% if doc.issue_date %}<dt>Issued</dt><dd>{{ doc.issue_date|date:"d M Y" }}</dd>{% endif %}
+          {% if doc.expiry_date %}<dt>Expires</dt><dd>{{ doc.expiry_date|date:"d M Y" }} {% expiry_badge doc %}</dd>{% endif %}
+          {% if is_owner and doc.folder %}<dt>Folder</dt><dd><a href="{{ doc.folder.get_absolute_url }}">{{ doc.folder.path }}</a></dd>{% endif %}
+          <dt>Tags</dt><dd><div class="chips">{% for t in tags %}<a class="chip tag" href="{% url 'vault:documents' %}?tag={{ t.name }}">{{ t.name }}</a>{% empty %}<span class="muted">None</span>{% endfor %}</div></dd>
+          <dt>Added</dt><dd>{{ doc.created_at|date:"d M Y, H:i" }} ({{ doc.created_at|naturaltime }})</dd>
+          <dt>Last changed</dt><dd>{{ doc.updated_at|date:"d M Y, H:i" }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card" id="versions">
+      <div class="card-head"><h2>Version history</h2>{% if is_owner and doc.status != 'trashed' %}<a class="btn btn-sm" href="{% url 'vault:version_new' doc.pk %}">{% icon "plus" 14 %} New version</a>{% endif %}</div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Version</th><th>File</th><th>Fingerprint</th><th>When</th><th></th></tr></thead>
+        <tbody>{% for v in versions %}<tr>
+          <td><strong>v{{ v.number }}</strong> {% if v.is_current %}<span class="badge badge-ok">Current</span>{% endif %}<div class="doc-meta">{{ v.note|default:"—" }}</div></td>
+          <td>{{ v.original_name|truncatechars:26 }}<div class="doc-meta">{{ v.size|filesizeformat }}</div></td>
+          <td><code title="{{ v.sha256 }}">{{ v.sha256|mask_hash:6 }}</code></td>
+          <td class="small muted nowrap">{{ v.created_at|date:"d M Y" }}<br>{{ v.uploaded_by|name_of }}</td>
+          <td class="right nowrap">{% if is_owner %}
+            <a class="btn btn-sm" href="{% url 'vault:version_download' doc.pk v.number %}">{% icon "download" 14 %}</a>
+            {% if not v.is_current %}<form class="inline-form" method="post" action="{% url 'vault:version_restore' doc.pk v.number %}" data-confirm="Restore version {{ v.number }} as a new version?">{% csrf_token %}<button class="btn btn-sm" type="submit">Restore</button></form>{% endif %}
+          {% endif %}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card">
+      <div class="card-head"><h2>Fingerprint</h2>
+        {% if doc.integrity_status == 'ok' %}<span class="badge badge-ok">{% icon "check" 12 %} Intact</span>{% elif doc.integrity_status == 'failed' %}<span class="badge badge-danger">{% icon "alert" 12 %} Mismatch</span>{% else %}<span class="badge">Unchecked</span>{% endif %}</div>
+      <div class="card-body">
+        <div class="hash">{{ doc.sha256 }}<button class="btn btn-sm copy" type="button" data-copy="{{ doc.sha256 }}">Copy</button></div>
+        <p class="small muted" style="margin:.6rem 0">SHA-256 of v{{ doc.version }}. {% if doc.last_verified_at %}Last checked {{ doc.last_verified_at|naturaltime }}.{% endif %}</p>
+        {% if is_owner %}<form method="post" action="{% url 'vault:verify_doc' doc.pk %}">{% csrf_token %}<button class="btn btn-block" type="submit">{% icon "fingerprint" 16 %} Verify integrity now</button></form>{% endif %}
+      </div>
+    </div>
+
+    {% if is_owner %}
+    <div class="card" id="certificate">
+      <div class="card-head"><h2>Verification certificate</h2>{% if doc.public_verification %}<span class="badge badge-ok">Public</span>{% else %}<span class="badge">Private</span>{% endif %}</div>
+      <div class="card-body">
+        <p class="small muted">Anyone with the code can confirm a file matches this document's fingerprint. They see the title, your name, size, version and fingerprint - never the file.</p>
+        <div class="link-box"><span>{{ doc.verification_code }}</span><button class="btn btn-sm" type="button" data-copy="{{ doc.verification_code }}">Copy</button></div>
+        {% if doc.public_verification %}
+        <div class="link-box" style="margin-top:.5rem"><span>{{ request.scheme }}://{{ request.get_host }}{% url 'vault:verify_code' doc.verification_code %}</span><button class="btn btn-sm" type="button" data-copy="{{ request.scheme }}://{{ request.get_host }}{% url 'vault:verify_code' doc.verification_code %}">Copy</button></div>
+        {% endif %}
+        <form method="post" action="{% url 'vault:certify' doc.pk %}" style="margin-top:.8rem">{% csrf_token %}<button class="btn btn-block {% if doc.public_verification %}btn-danger{% endif %}" type="submit">{% if doc.public_verification %}Turn off public page{% else %}{% icon "seal" 16 %} Publish certificate{% endif %}</button></form>
+      </div>
+    </div>
+
+    <div class="card" id="sharing">
+      <div class="card-head"><h2>Sharing</h2></div>
+      <div class="card-body">
+        {% if doc.status != 'trashed' %}
+        <div class="row"><button class="btn btn-sm" type="button" data-dialog-open="link-dialog" {% if doc.sensitivity == 'critical' %}disabled title="Critical documents cannot be shared by link"{% endif %}>{% icon "link" 14 %} Create link</button>
+          <button class="btn btn-sm" type="button" data-dialog-open="user-dialog">{% icon "users" 14 %} Share with user</button></div>
+        {% if doc.sensitivity == 'critical' %}<p class="small muted" style="margin:.6rem 0 0">Critical documents can only be shared with VeriVault users.</p>{% endif %}
+        {% endif %}
+        {% if links %}<h4 style="margin:1.1rem 0 .4rem;font-family:var(--font-body);font-size:.85rem">Links</h4>
+        {% for l in links %}
+        <div style="padding:.6rem 0;border-top:1px solid var(--line)">
+          <div class="row between"><strong class="small">{{ l.label|default:"Untitled link" }}</strong>
+            <span class="badge {% if l.state == 'live' %}badge-ok{% elif l.state == 'expired' or l.state == 'exhausted' %}badge-warn{% else %}badge-danger{% endif %}">{{ l.state|title }}</span></div>
+          <div class="doc-meta">{{ l.download_count }} download{{ l.download_count|pluralize }}{% if l.max_downloads %} of {{ l.max_downloads }}{% endif %} · {{ l.view_count }} view{{ l.view_count|pluralize }} · {% if l.expires_at %}expires {{ l.expires_at|naturaltime }}{% else %}no expiry{% endif %}{% if l.requires_password %} · password{% endif %}</div>
+          {% if l.is_active %}<div class="link-box" style="margin:.4rem 0"><span>{{ request.scheme }}://{{ request.get_host }}{{ l.get_absolute_url }}</span><button class="btn btn-sm" type="button" data-copy="{{ request.scheme }}://{{ request.get_host }}{{ l.get_absolute_url }}">Copy</button></div>
+          <form class="inline-form" method="post" action="{% url 'vault:share_link_revoke' doc.pk l.pk %}" data-confirm="Revoke this link?">{% csrf_token %}<button class="btn btn-sm btn-danger" type="submit">Revoke</button></form>{% endif %}
+        </div>{% endfor %}{% endif %}
+        {% if user_shares %}<h4 style="margin:1.1rem 0 .4rem;font-family:var(--font-body);font-size:.85rem">People</h4>
+        {% for s in user_shares %}
+        <div class="row between" style="padding:.5rem 0;border-top:1px solid var(--line)"><div><strong class="small">{{ s.shared_with|name_of }}</strong><div class="doc-meta">@{{ s.shared_with.username }} · {% if s.can_download %}can download{% else %}view only{% endif %}{% if s.expires_at %} · until {{ s.expires_at|date:"d M" }}{% endif %}</div></div>
+          <form class="inline-form" method="post" action="{% url 'vault:share_user_revoke' doc.pk s.pk %}" data-confirm="Remove access?">{% csrf_token %}<button class="btn btn-sm btn-danger" type="submit">Remove</button></form></div>
+        {% endfor %}{% endif %}
+        {% if not links and not user_shares %}<p class="small muted" style="margin:.9rem 0 0">Not shared with anyone.</p>{% endif %}
+      </div>
+    </div>
+
+    {% if related %}
+    <div class="card"><div class="card-head"><h2>Related documents</h2></div>
+      {% for r in related %}<div class="tree-row"><span class="doc-icon">{% category_icon r.document.category 16 %}</span><div style="flex:1;min-width:0"><a class="doc-title" href="{{ r.document.get_absolute_url }}">{{ r.document.title }}</a><div class="doc-meta">{{ r.reasons|join:", " }}</div></div></div>{% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="card"><div class="card-head"><h2>History</h2><a class="small" href="{% url 'vault:activity' %}?q={{ doc.title|urlencode }}">All</a></div>
+      <div class="card-body"><ul class="timeline">{% for e in history %}<li><strong class="small">{{ e.get_action_display }}</strong><div class="doc-meta">{{ e.details }} · {{ e.created_at|naturaltime }}</div></li>{% empty %}<li class="muted small">No history yet.</li>{% endfor %}</ul></div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if is_owner %}
+<dialog id="link-dialog"><div class="card-body">
+  <h2>Create a share link</h2>
+  <form method="post" action="{% url 'vault:share_link_create' doc.pk %}">
+    {% csrf_token %}
+    {% include "partials/_field.html" with field=link_form.label %}
+    <div class="form-grid">{% include "partials/_field.html" with field=link_form.expires %}{% include "partials/_field.html" with field=link_form.max_downloads %}</div>
+    {% include "partials/_field.html" with field=link_form.password %}
+    {% include "partials/_field.html" with field=link_form.allow_download %}
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Create link</button><button class="btn" type="button" data-dialog-close>Cancel</button></div>
+  </form>
+</div></dialog>
+<dialog id="user-dialog"><div class="card-body">
+  <h2>Share with a VeriVault user</h2>
+  <form method="post" action="{% url 'vault:share_user_create' doc.pk %}">
+    {% csrf_token %}
+    {% include "partials/_field.html" with field=user_form.recipient %}
+    {% include "partials/_field.html" with field=user_form.can_download %}
+    {% include "partials/_field.html" with field=user_form.days %}
+    {% include "partials/_field.html" with field=user_form.note %}
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Share</button><button class="btn" type="button" data-dialog-close>Cancel</button></div>
+  </form>
+</div></dialog>
+{% endif %}
+{% endblock %}

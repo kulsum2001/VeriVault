@@ -1,0 +1,41 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras %}
+{% block title %}Set up two-factor authentication · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="crumbs"><a href="{% url 'accounts:security' %}">Security</a> / Two-factor</div><h1>Set up two-factor authentication</h1></div></div>
+<div class="card" style="max-width:640px"><div class="card-body">
+  <p class="muted" style="margin-top:0">You'll need an authenticator app on your phone first - Google Authenticator, Microsoft Authenticator, Authy, or 1Password all work.</p>
+
+  <h3 style="margin-top:1.2rem">Option A - scan this code (fastest)</h3>
+  <div class="row" style="align-items:flex-start;gap:1.2rem;flex-wrap:wrap">
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px;flex:none">
+      <img src="{% url 'accounts:twofa_qr' %}" width="200" height="200" alt="QR code for two-factor setup - scan it with your authenticator app, or use the manual key below if you can't scan it">
+    </div>
+    <ol style="flex:1;min-width:220px;margin:0;padding-left:1.2rem">
+      <li>Open your authenticator app</li>
+      <li>Choose <em>Add account</em> &rarr; <em>Scan a QR code</em></li>
+      <li>Point your camera at the code</li>
+    </ol>
+  </div>
+
+  <h3>Option B - enter the key by hand</h3>
+  <p class="small muted" style="margin-top:0">If your app can't scan, choose <em>Add account</em> &rarr; <em>Enter a setup key</em> (wording varies by app), then use these details:</p>
+  <dl class="kv" style="margin-bottom:.6rem">
+    <dt>Account name</dt><dd>{{ user.email|default:user.username }}</dd>
+    <dt>Key</dt><dd class="mono">{{ secret }}</dd>
+    <dt>Type</dt><dd>Time-based</dd>
+  </dl>
+  <div class="hash" style="margin:0 0 .6rem;font-size:1rem;letter-spacing:.08em">{{ secret }}<button class="btn btn-sm copy" type="button" data-copy="{{ secret }}">Copy</button></div>
+  <details class="small muted"><summary>Prefer a link? (otpauth URI)</summary><code style="word-break:break-all">{{ uri }}</code></details>
+
+  <h3>Then confirm</h3>
+  <p class="small muted" style="margin-top:0">Whichever option you used, your app is now showing a 6-digit code that changes every 30 seconds. Type the current one here:</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "partials/_form_errors.html" %}
+    {% include "partials/_field.html" with field=form.code %}
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Turn on 2FA</button><a class="btn" href="{% url 'accounts:security' %}">Cancel</a></div>
+  </form>
+  <p class="small muted">Keep your setup key somewhere safe. If you lose your device, an administrator can reset 2FA for your account.</p>
+</div></div>
+{% endblock %}

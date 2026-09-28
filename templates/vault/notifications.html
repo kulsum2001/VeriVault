@@ -1,0 +1,17 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras humanize %}
+{% block title %}Notifications · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Notifications</h1><p class="sub">Expiry reminders and sharing alerts.</p></div>
+  <form class="row" method="post">{% csrf_token %}<button class="btn" name="action" value="read_all" type="submit">Mark all read</button><button class="btn" name="action" value="clear" type="submit">Clear read</button></form></div>
+<div class="card">
+  {% for n in page %}
+  <div class="tree-row" {% if not n.is_read %}style="background:var(--accent-soft)"{% endif %}>
+    <span class="doc-icon">{% if n.kind == 'expired' %}{% icon "alert" 18 %}{% elif n.kind == 'expiring' %}{% icon "clock" 18 %}{% elif n.kind == 'share' %}{% icon "share" 18 %}{% else %}{% icon "bell" 18 %}{% endif %}</span>
+    <div style="flex:1;min-width:0"><strong>{{ n.title }}</strong><div class="doc-meta">{{ n.message }} · {{ n.created_at|naturaltime }}</div></div>
+    {% if not n.is_read or n.document_id %}<form class="inline-form" method="post" action="{% url 'vault:notification_read' n.pk %}">{% csrf_token %}<button class="btn btn-sm" type="submit">{% if n.document_id %}Open{% else %}Mark read{% endif %}</button></form>{% endif %}
+  </div>
+  {% empty %}<div class="empty">{% icon "bell" 38 %}<h3>You're all caught up</h3></div>{% endfor %}
+  {% include "partials/_pagination.html" %}
+</div>
+{% endblock %}

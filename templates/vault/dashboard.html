@@ -1,0 +1,65 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras humanize %}
+{% block title %}Dashboard · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Hello, {{ user.profile.name|truncatechars:24 }}</h1><p class="sub">Here's the state of your vault today.</p></div>
+  <div class="row"><a class="btn" href="{% url 'vault:insights' %}">{% icon "pulse" 16 %} Vault health</a><a class="btn btn-primary" href="{% url 'vault:upload' %}">{% icon "upload" 16 %} Upload document</a></div>
+</div>
+
+<div class="grid g4" style="margin-bottom:1.1rem">
+  <a class="card stat" href="{% url 'vault:documents' %}"><span class="ico">{% icon "file" 20 %}</span><div><div class="num">{{ stats.total }}</div><div class="lbl">Documents</div></div></a>
+  <a class="card stat" href="{% url 'vault:documents' %}?expiry=soon"><span class="ico">{% icon "clock" 20 %}</span><div><div class="num">{{ expiry.soon|length }}</div><div class="lbl">Expiring in {{ expiry.days }} days</div></div></a>
+  <a class="card stat" href="{% url 'vault:documents' %}?expiry=expired"><span class="ico">{% icon "alert" 20 %}</span><div><div class="num">{{ expiry.expired|length }}</div><div class="lbl">Expired</div></div></a>
+  <a class="card stat" href="{% url 'vault:shared_with_me' %}"><span class="ico">{% icon "share" 20 %}</span><div><div class="num">{{ stats.shared }}</div><div class="lbl">Active shares ({{ stats.received }} received)</div></div></a>
+</div>
+
+<div class="split">
+  <div class="col">
+    <div class="card">
+      <div class="card-head"><h2>Needs your attention</h2><a class="small" href="{% url 'vault:insights' %}">All recommendations</a></div>
+      {% for r in top_recs %}
+      <div class="rec {{ r.level }}"><span class="lvl"></span><div style="flex:1"><strong>{{ r.title }}</strong><div class="muted small">{{ r.detail }}</div></div>{% if r.url %}<a class="btn btn-sm" href="{{ r.url }}">Review</a>{% endif %}</div>
+      {% empty %}<div class="empty">{% icon "check" 34 %}<h3>All clear</h3><p>No urgent actions right now.</p></div>{% endfor %}
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Recently updated</h2><a class="small" href="{% url 'vault:documents' %}">View all</a></div>
+      {% for d in recent %}{% include "vault/_doc_line.html" %}{% empty %}
+      <div class="empty">{% icon "upload" 34 %}<h3>Your vault is empty</h3><p>Upload your first document to get started.</p><a class="btn btn-primary" href="{% url 'vault:upload' %}">Upload a document</a></div>{% endfor %}
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Recent activity</h2><a class="small" href="{% url 'vault:activity' %}">Full log</a></div>
+      {% for e in activity %}
+      <div class="tree-row"><span class="doc-icon">{% icon "activity" 16 %}</span><div style="flex:1;min-width:0"><strong>{{ e.get_action_display }}</strong>{% if e.document_title %} · {{ e.document_title }}{% endif %}<div class="doc-meta">{{ e.details }}</div></div><span class="doc-meta nowrap">{{ e.created_at|naturaltime }}</span></div>
+      {% empty %}<div class="empty"><p>No activity yet.</p></div>{% endfor %}
+    </div>
+  </div>
+  <div class="col">
+    <div class="card card-body">
+      <div class="row" style="gap:1.2rem;flex-wrap:nowrap">
+        <div class="ring {% if health.score < 55 %}danger{% elif health.score < 75 %}warn{% endif %}" data-ring="{{ health.score }}"><div><strong>{{ health.score }}</strong><span>of 100</span></div></div>
+        <div><h3 style="margin-bottom:.2rem">Vault health</h3><span class="badge {% if health.score >= 75 %}badge-ok{% elif health.score >= 55 %}badge-warn{% else %}badge-danger{% endif %}">{{ health.grade }}</span><p class="muted small" style="margin:.5rem 0 0">Rule-based score from expiry, duplicates, sharing hygiene, integrity checks and 2FA.</p></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>By category</h2></div>
+      <div class="card-body">
+        {% if categories %}
+        <div class="donut-wrap">
+          <div class="donut" data-donut></div>
+          <ul class="legend">{% for c in categories %}<li><i data-legend-dot></i><a href="{% url 'vault:documents' %}?category={{ c.category }}">{{ c.label }}</a><span class="muted" style="margin-left:auto">{{ c.count }}</span></li>{% endfor %}</ul>
+        </div>
+        {{ categories|json_script:"category-data" }}
+        {% else %}<p class="muted small" style="margin:0">Nothing to chart yet.</p>{% endif %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Renewals</h2></div>
+      {% for d in expiry_items %}{% include "vault/_doc_line.html" %}{% empty %}<div class="empty"><p>No documents are expiring soon.</p></div>{% endfor %}
+    </div>
+    {% if favorites %}
+    <div class="card"><div class="card-head"><h2>Favourites</h2></div>{% for d in favorites %}{% include "vault/_doc_line.html" %}{% endfor %}</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

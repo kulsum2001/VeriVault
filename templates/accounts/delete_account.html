@@ -1,0 +1,15 @@
+{% extends "layouts/app.html" %}
+{% block title %}Delete account · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:520px;margin:1rem auto"><div class="card-body">
+  <h1>Delete your account</h1>
+  <p>This permanently removes your account, every document, version, share link and log entry. <strong>It cannot be undone.</strong> Consider <a href="{% url 'vault:export' %}">exporting your vault</a> first.</p>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "partials/_form_errors.html" %}
+    {% include "partials/_field.html" with field=form.password %}
+    <div class="field"><label for="confirm">Type DELETE to confirm</label><input class="input" id="confirm" name="confirm" autocomplete="off"></div>
+    <div class="form-actions"><button class="btn btn-danger-solid" type="submit">Delete everything</button><a class="btn" href="{% url 'accounts:profile' %}">Cancel</a></div>
+  </form>
+</div></div>
+{% endblock %}

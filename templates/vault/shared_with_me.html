@@ -1,0 +1,17 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras humanize %}
+{% block title %}Shared with me · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Shared with me</h1><p class="sub">Documents other VeriVault users have granted you access to.</p></div></div>
+<div class="card">
+  {% if shares %}
+  <div class="table-wrap"><table class="table"><thead><tr><th>Document</th><th>Shared by</th><th>Access</th><th>Note</th><th>Since</th></tr></thead><tbody>
+    {% for s in shares %}<tr>
+      <td><div class="cell-doc"><span class="doc-icon">{% category_icon s.document.category 18 %}</span><div><a class="doc-title" href="{{ s.document.get_absolute_url }}">{{ s.document.title }}</a><div class="doc-meta">{{ s.document.get_category_display }} · {{ s.document.size|filesizeformat }}</div></div></div></td>
+      <td>{{ s.shared_by|name_of }}</td>
+      <td>{% if s.can_download %}<span class="badge badge-ok">View &amp; download</span>{% else %}<span class="badge">View only</span>{% endif %}{% if s.expires_at %}<div class="doc-meta">until {{ s.expires_at|date:"d M Y" }}</div>{% endif %}</td>
+      <td class="muted small">{{ s.note|default:"—" }}</td><td class="muted small nowrap">{{ s.created_at|naturaltime }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}<div class="empty">{% icon "users" 38 %}<h3>Nothing shared with you yet</h3><p>When someone shares a document with your username or e-mail it will appear here.</p></div>{% endif %}
+</div>
+{% endblock %}

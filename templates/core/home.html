@@ -1,0 +1,74 @@
+{% extends "layouts/public.html" %}
+{% load vault_extras %}
+{% block head_extra %}
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"{{ SITE_NAME }}","applicationCategory":"SecurityApplication","operatingSystem":"Web","description":"{{ SITE_DESCRIPTION|escapejs }}","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <div>
+      <h1>Prove every document is exactly what you filed.</h1>
+      <p class="lead">VeriVault keeps your passports, policies, contracts and certificates in one private vault - each sealed with a SHA-256 fingerprint, versioned, tracked and ready to verify.</p>
+      <div class="row" style="margin-top:1.6rem">
+        {% if user.is_authenticated %}
+          <a class="btn btn-primary btn-lg" href="{% url 'vault:dashboard' %}">Open your vault</a>
+        {% else %}
+          <a class="btn btn-primary btn-lg" href="{% url 'accounts:register' %}">Create your vault</a>
+          <a class="btn btn-ghost btn-lg" href="{% url 'accounts:login' %}">Sign in</a>
+        {% endif %}
+      </div>
+      <p class="small" style="margin-top:1.2rem;color:#8ea3bb">Free and self-hosted. Runs on SQLite - no external services.</p>
+    </div>
+    <div class="demo" data-fingerprint-demo>
+      <h3>Try it: fingerprint a file</h3>
+      <p class="muted small">Your file is read in this browser tab and never uploaded.</p>
+      <label class="demo-drop" style="display:block">
+        {% icon "fingerprint" 34 %}
+        <div><strong>Drop a file</strong> or click to choose</div>
+        <input type="file" class="sr-only" aria-label="Choose a file to fingerprint">
+      </label>
+      <div class="demo-result hidden">
+        <div class="row between" style="margin:.9rem 0 .3rem"><span class="small" data-demo-name></span><button class="btn btn-sm" type="button" data-demo-copy data-copy="">Copy</button></div>
+        <div class="hash" data-demo-hash></div>
+        <p class="small muted" style="margin:.6rem 0 0">Change a single byte and this fingerprint changes completely. That is how VeriVault proves a document has not been altered.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <h2>Everything a document vault should do - and a few things most skip</h2>
+      <p>Built around the real lifecycle of important paperwork: filing it, finding it, renewing it, sharing it and proving it.</p>
+    </div>
+    <div class="grid g3">
+      {% for title, text in features %}
+      <article class="card feature"><h3>{% icon "seal" 18 %} {{ title }}</h3><p class="muted" style="margin:0">{{ text }}</p></article>
+      {% endfor %}
+    </div>
+    <p style="margin-top:1.4rem"><a href="{% url 'core:features' %}">See every feature</a></p>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="container">
+    <div class="section-head"><h2>From file to proof in four steps</h2></div>
+    <div class="steps">
+      <div class="step"><strong>Upload</strong><p class="muted small" style="margin:.3rem 0 0">Drop in a file. VeriVault suggests a category, tags and reminders from its name.</p></div>
+      <div class="step"><strong>Seal</strong><p class="muted small" style="margin:.3rem 0 0">A SHA-256 fingerprint is recorded and rechecked whenever you ask.</p></div>
+      <div class="step"><strong>Share</strong><p class="muted small" style="margin:.3rem 0 0">Send an expiring link, or grant view-only access to another user.</p></div>
+      <div class="step"><strong>Verify</strong><p class="muted small" style="margin:.3rem 0 0">Give anyone a certificate code so they can confirm a file matches the original.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="container">
+    <div class="cta-band">
+      <div><h2>Ready to seal your first document?</h2><p style="margin:.4rem 0 0;color:#b8c8da">It takes about a minute.</p></div>
+      <a class="btn btn-primary btn-lg" href="{% url 'accounts:register' %}">Create your vault</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% load vault_extras %}{% if page.paginator.num_pages > 1 %}
+<nav class="pagination" aria-label="Pagination">
+  {% if page.has_previous %}<a href="?{% url_replace page=page.previous_page_number %}" rel="prev">&laquo; Prev</a>{% else %}<span class="disabled">&laquo; Prev</span>{% endif %}
+  {% for n in page.paginator.page_range %}
+    {% if n == page.number %}<span class="current" aria-current="page">{{ n }}</span>
+    {% elif n <= 2 or n > page.paginator.num_pages|add:"-2" or n >= page.number|add:"-1" and n <= page.number|add:"1" %}<a href="?{% url_replace page=n %}">{{ n }}</a>
+    {% elif n == 3 or n == page.paginator.num_pages|add:"-2" %}<span class="disabled">…</span>{% endif %}
+  {% endfor %}
+  {% if page.has_next %}<a href="?{% url_replace page=page.next_page_number %}" rel="next">Next &raquo;</a>{% else %}<span class="disabled">Next &raquo;</span>{% endif %}
+</nav>
+{% endif %}

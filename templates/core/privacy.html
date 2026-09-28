@@ -1,0 +1,14 @@
+{% extends "layouts/public.html" %}
+{% block title %}Privacy · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<section class="section"><div class="container prose">
+  <h1>Privacy</h1>
+  <p class="muted">This is a self-hosted application. The operator of this installation controls the data.</p>
+  <h2>What is stored</h2>
+  <p>Your account details, the documents and metadata you upload, and an audit log of actions taken in your vault (including IP address and browser user agent).</p>
+  <h2>What is shared</h2>
+  <p>Nothing leaves the server. There are no analytics, ad networks or third-party API calls. A verification certificate shows only a document's title, your display name, fingerprint, size, version and certification date.</p>
+  <h2>Your controls</h2>
+  <p>You can export every document as a ZIP, delete individual documents permanently, or delete your account and all associated files from the Profile page.</p>
+</div></section>
+{% endblock %}

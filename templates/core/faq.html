@@ -1,0 +1,9 @@
+{% extends "layouts/public.html" %}
+{% block title %}FAQ · {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}Answers about VeriVault: encryption, verification, sharing, trash and duplicates.{% endblock %}
+{% block content %}
+<section class="section"><div class="container prose">
+  <h1>Frequently asked questions</h1>
+  {% for q, a in faq %}<details class="faq"><summary>{{ q }}</summary><p>{{ a }}</p></details>{% endfor %}
+</div></section>
+{% endblock %}

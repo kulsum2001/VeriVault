@@ -1,0 +1,11 @@
+{% extends "layouts/public.html" %}
+{% block title %}Bad request · {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex{% endblock %}
+{% block content %}
+<section class="container error-page">
+  <div class="code">400</div>
+  <h1>That request didn't look right</h1>
+  <p class="muted">Please go back and try again.</p>
+  <p><a class="btn btn-primary" href="{% url 'core:home' %}">Go home</a></p>
+</section>
+{% endblock %}

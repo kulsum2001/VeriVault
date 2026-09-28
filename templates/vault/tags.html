@@ -1,0 +1,24 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras %}
+{% block title %}Tags · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Tags</h1><p class="sub">Lightweight labels that cut across folders.</p></div></div>
+<div class="split">
+  <div class="card">
+    {% for t in tags %}
+    <div class="tree-row">
+      <a class="chip tag" href="{% url 'vault:documents' %}?tag={{ t.name }}">{{ t.name }}</a>
+      <span class="muted small">{{ t.n }} document{{ t.n|pluralize }}</span><span class="spacer"></span>
+      <form class="row" method="post" style="gap:.3rem">{% csrf_token %}<input type="hidden" name="tag_id" value="{{ t.pk }}"><input type="hidden" name="action" value="rename">
+        <input class="input" name="name" value="{{ t.name }}" aria-label="Rename {{ t.name }}" style="width:150px;padding:.3rem .5rem"><button class="btn btn-sm" type="submit">Rename</button></form>
+      <form class="inline-form" method="post" data-confirm="Delete tag '{{ t.name }}'? Documents keep everything else.">{% csrf_token %}<input type="hidden" name="tag_id" value="{{ t.pk }}"><input type="hidden" name="action" value="delete"><button class="btn btn-sm btn-danger" type="submit">Delete</button></form>
+    </div>
+    {% empty %}<div class="empty">{% icon "tag" 38 %}<h3>No tags yet</h3><p>Add tags when uploading, or create one here.</p></div>{% endfor %}
+  </div>
+  <div class="card"><div class="card-head"><h2>New tag</h2></div><div class="card-body">
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="create">
+      <div class="field"><label for="tag-name">Name</label><input class="input" id="tag-name" name="name" maxlength="32" required><span class="help">Lowercase, spaces become hyphens.</span></div>
+      <button class="btn btn-primary" type="submit">Add tag</button></form>
+  </div></div>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "layouts/public.html" %}
+{% block title %}Access denied · {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex{% endblock %}
+{% block content %}
+<section class="container error-page">
+  <div class="code">403</div>
+  <h1>You don't have permission to do that</h1>
+  <p class="muted">{% if exception %}{{ exception }}{% else %}This action isn't available for your account or this document.{% endif %}</p>
+  <p class="row" style="justify-content:center"><a class="btn btn-primary" href="{% url 'core:home' %}">Go home</a></p>
+</section>
+{% endblock %}

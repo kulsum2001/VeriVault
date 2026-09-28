@@ -1,0 +1,16 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras %}
+{% block title %}New version · {{ doc.title }} · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="crumbs"><a href="{% url 'vault:documents' %}">Documents</a> / <a href="{{ doc.get_absolute_url }}">{{ doc.title }}</a> / New version</div>
+  <h1>Upload a new version</h1><p class="sub">Current version is v{{ doc.version }}. Earlier versions are kept and can be restored.</p></div></div>
+<div class="card" style="max-width:640px"><div class="card-body">
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% include "partials/_form_errors.html" %}
+    {% include "partials/_field.html" with field=form.file %}
+    {% include "partials/_field.html" with field=form.note %}
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Save version {{ doc.version|add:1 }}</button><a class="btn" href="{{ doc.get_absolute_url }}">Cancel</a></div>
+  </form>
+</div></div>
+{% endblock %}

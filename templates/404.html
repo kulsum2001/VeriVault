@@ -1,0 +1,11 @@
+{% extends "layouts/public.html" %}
+{% block title %}Page not found · {{ SITE_NAME }}{% endblock %}
+{% block robots %}noindex{% endblock %}
+{% block content %}
+<section class="container error-page">
+  <div class="code">404</div>
+  <h1>We couldn't find that page</h1>
+  <p class="muted">The document or page may have been moved, deleted, or you may not have access to it.</p>
+  <p class="row" style="justify-content:center"><a class="btn btn-primary" href="{% url 'core:home' %}">Go home</a><a class="btn" href="{% url 'vault:documents' %}">Browse documents</a></p>
+</section>
+{% endblock %}

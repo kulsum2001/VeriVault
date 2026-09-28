@@ -1,0 +1,22 @@
+{% extends "layouts/public.html" %}
+{% load vault_extras %}
+{% block title %}Features · {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}Explore VeriVault: SHA-256 fingerprints, version history, expiring share links, verification certificates, expiry reminders, audit trail and a JSON API.{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="section-head"><h1>Features</h1><p>Core vault functions, plus the trust tools that make a vault worth relying on.</p></div>
+    <div class="grid g3">
+      {% for title, text in features %}
+      <article class="card feature"><h3>{% icon "seal" 18 %} {{ title }}</h3><p class="muted" style="margin:0">{{ text }}</p></article>
+      {% endfor %}
+    </div>
+    <div class="grid g2" style="margin-top:2.5rem">
+      <div class="card card-body"><h2>Organise</h2><p class="muted">Nested colour-coded folders, free-form tags, ten categories, favourites and archive. Full-text style search across titles, issuers, reference numbers and tags, with filters for expiry, sensitivity and status, plus bulk actions.</p></div>
+      <div class="card card-body"><h2>Stay ahead</h2><p class="muted">Set expiry dates and get notifications before renewal deadlines. The vault health score tells you what to fix first, flags duplicates and lists essential documents you have not filed yet.</p></div>
+      <div class="card card-body"><h2>Share safely</h2><p class="muted">Links can expire, be capped by download count, and be password protected. Sensitive documents ask for your password again before download; critical ones can never be shared by public link.</p></div>
+      <div class="card card-body"><h2>Prove authenticity</h2><p class="muted">Publish a verification certificate for any document. Recipients drop the file on the verification page and the fingerprint is compared in their own browser.</p></div>
+    </div>
+  </div>
+</section>
+{% endblock %}

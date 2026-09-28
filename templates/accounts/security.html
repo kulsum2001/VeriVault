@@ -1,0 +1,68 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras %}
+{% block title %}Security &amp; API · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Security &amp; API</h1><p class="sub">Password, two-factor authentication and API tokens.</p></div></div>
+<div class="grid g2">
+  <div class="col">
+    <div class="card">
+      <div class="card-head"><h2>Two-factor authentication</h2>{% if user.profile.totp_enabled %}<span class="badge badge-ok">On</span>{% else %}<span class="badge badge-warn">Off</span>{% endif %}</div>
+      <div class="card-body">
+        {% if user.profile.totp_enabled %}
+          <p class="muted">Sign-in requires a code from your authenticator app. Turn it off by confirming your password.</p>
+          <form method="post" action="{% url 'accounts:twofa_disable' %}" data-confirm="Turn off two-factor authentication?">
+            {% csrf_token %}
+            {% include "partials/_field.html" with field=disable_form.password %}
+            <button class="btn btn-danger" type="submit">Turn off 2FA</button>
+          </form>
+        {% else %}
+          <p class="muted">Add an authenticator app (Google Authenticator, Authy, 1Password…) so a stolen password alone can't open your vault.</p>
+          <a class="btn btn-primary" href="{% url 'accounts:twofa_setup' %}">{% icon "shield" 16 %} Set up 2FA</a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Change password</h2></div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% include "partials/_form_errors.html" with form=password_form %}
+          {% include "partials/_field.html" with field=password_form.old_password %}
+          {% include "partials/_field.html" with field=password_form.new_password1 %}
+          {% include "partials/_field.html" with field=password_form.new_password2 %}
+          <button class="btn btn-primary" type="submit">Update password</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card">
+      <div class="card-head"><h2>API tokens</h2><a class="btn btn-sm" href="{% url 'api:docs' %}">Reference</a></div>
+      <div class="card-body">
+        {% if new_token %}
+        <div class="token-reveal" style="margin-bottom:1rem">
+          <strong>{{ new_token.name }}</strong> - copy this token now, it will not be shown again.
+          <div class="link-box" style="margin-top:.5rem"><span>{{ new_token.value }}</span><button class="btn btn-sm" type="button" data-copy="{{ new_token.value }}">Copy</button></div>
+        </div>
+        {% endif %}
+        <form method="post" action="{% url 'accounts:token_create' %}" class="row" style="align-items:flex-end">
+          {% csrf_token %}
+          <div class="field" style="flex:1;margin:0">{{ token_form.name.label_tag }}{{ token_form.name }}</div>
+          <button class="btn btn-primary" type="submit">Create token</button>
+        </form>
+        {% if tokens %}
+        <div class="table-wrap" style="margin-top:1rem"><table class="table">
+          <thead><tr><th>Name</th><th>Prefix</th><th>Last used</th><th></th></tr></thead>
+          <tbody>{% for t in tokens %}<tr><td>{{ t.name }}</td><td><code>{{ t.prefix }}…</code></td><td class="muted small">{{ t.last_used_at|date:"d M Y H:i"|default:"Never" }}</td>
+            <td class="right"><form class="inline-form" method="post" action="{% url 'accounts:token_revoke' t.pk %}" data-confirm="Revoke this token? Apps using it will stop working.">{% csrf_token %}<button class="btn btn-sm btn-danger" type="submit">Revoke</button></form></td></tr>{% endfor %}</tbody>
+        </table></div>
+        {% else %}<p class="muted small" style="margin:1rem 0 0">No tokens yet.</p>{% endif %}
+      </div>
+    </div>
+    <div class="card card-body">
+      <h3>Recent sign-in activity</h3>
+      <p class="muted small">Review sign-ins, failed attempts and security changes in the <a href="{% url 'vault:activity' %}?type=security">activity log</a>.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

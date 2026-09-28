@@ -1,0 +1,10 @@
+{% load vault_extras %}{% if messages %}
+<div class="messages" role="status" aria-live="polite">
+  {% for message in messages %}
+  <div class="message {{ message.tags }}">
+    <span>{{ message }}</span>
+    <button type="button" class="close" aria-label="Dismiss">&times;</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}

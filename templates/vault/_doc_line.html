@@ -1,0 +1,6 @@
+{% load vault_extras %}
+<div class="tree-row">
+  <span class="doc-icon">{% category_icon d.category 18 %}</span>
+  <div style="min-width:0;flex:1"><a class="doc-title" href="{{ d.get_absolute_url }}">{{ d.title }}</a><div class="doc-meta">{{ d.get_category_display }}{% if d.folder %} · {{ d.folder.name }}{% endif %}</div></div>
+  {% expiry_badge d %}
+</div>

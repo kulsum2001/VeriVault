@@ -1,0 +1,94 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras humanize %}
+{% block title %}{% if current_folder %}{{ current_folder.name }}{% else %}Documents{% endif %} · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    {% if current_folder %}<div class="crumbs"><a href="{% url 'vault:documents' %}">Documents</a> / {{ current_folder.path }}</div>{% endif %}
+    <h1>{% if current_folder %}{{ current_folder.name }}{% else %}Documents{% endif %}</h1>
+    <p class="sub">{{ total }} document{{ total|pluralize }}{% if f.q %} matching “{{ f.q }}”{% endif %}</p>
+  </div>
+  <div class="row">
+    <a class="btn {% if view_mode == 'list' %}btn-ink{% endif %} btn-icon" href="?{% url_replace view='' %}" aria-label="List view">{% icon "list" 18 %}</a>
+    <a class="btn {% if view_mode == 'grid' %}btn-ink{% endif %} btn-icon" href="?{% url_replace view='grid' %}" aria-label="Grid view">{% icon "grid" 18 %}</a>
+    <a class="btn btn-primary" href="{% url 'vault:upload' %}{% if current_folder %}?folder={{ current_folder.pk }}{% endif %}">{% icon "upload" 16 %} Upload</a>
+  </div>
+</div>
+
+<form class="card card-body" method="get" style="margin-bottom:1rem">
+  <div class="filters">
+    <div class="field" style="flex:2;min-width:200px"><label for="f-q">Search</label><input class="input" id="f-q" type="search" name="q" value="{{ f.q }}" placeholder="Title, issuer, tag, reference…"></div>
+    <div class="field"><label for="f-cat">Category</label><select class="input" id="f-cat" name="category"><option value="">All</option>{% for v, l in categories %}<option value="{{ v }}" {% if f.category == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="f-folder">Folder</label><select class="input" id="f-folder" name="folder"><option value="">All</option><option value="none" {% if f.folder == 'none' %}selected{% endif %}>Unfiled</option>{% for fo in folders %}<option value="{{ fo.pk }}" {% if f.folder == fo.pk|stringformat:"s" %}selected{% endif %}>{% if fo.tree_depth %}{% for _ in ""|ljust:fo.tree_depth %}— {% endfor %}{% endif %}{{ fo.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="f-tag">Tag</label><select class="input" id="f-tag" name="tag"><option value="">Any</option>{% for t in tags %}<option value="{{ t.name }}" {% if f.tag == t.name %}selected{% endif %}>{{ t.name }} ({{ t.n }})</option>{% endfor %}</select></div>
+    <div class="field"><label for="f-exp">Expiry</label><select class="input" id="f-exp" name="expiry"><option value="">Any</option>
+      <option value="expired" {% if f.expiry == 'expired' %}selected{% endif %}>Expired</option><option value="soon" {% if f.expiry == 'soon' %}selected{% endif %}>Expiring soon</option>
+      <option value="valid" {% if f.expiry == 'valid' %}selected{% endif %}>Valid</option><option value="none" {% if f.expiry == 'none' %}selected{% endif %}>No expiry</option></select></div>
+    <div class="field"><label for="f-status">Status</label><select class="input" id="f-status" name="status"><option value="">Active + archived</option><option value="active" {% if f.status == 'active' %}selected{% endif %}>Active</option><option value="archived" {% if f.status == 'archived' %}selected{% endif %}>Archived</option></select></div>
+    <div class="field"><label for="f-sort">Sort</label><select class="input" id="f-sort" name="sort">
+      <option value="updated" {% if f.sort == 'updated' or not f.sort %}selected{% endif %}>Recently updated</option><option value="created" {% if f.sort == 'created' %}selected{% endif %}>Newest</option>
+      <option value="title" {% if f.sort == 'title' %}selected{% endif %}>Title A-Z</option><option value="expiry" {% if f.sort == 'expiry' %}selected{% endif %}>Expiry date</option>
+      <option value="size" {% if f.sort == 'size' %}selected{% endif %}>Largest</option></select></div>
+    <div class="field check" style="align-self:center;margin-top:1.2rem;flex:0 0 auto"><input class="checkbox" type="checkbox" id="f-fav" name="favorite" value="1" {% if f.favorite == '1' %}checked{% endif %}><label for="f-fav">Favourites</label></div>
+    {% if view_mode == 'grid' %}<input type="hidden" name="view" value="grid">{% endif %}
+    <div class="row"><button class="btn btn-primary" type="submit">{% icon "search" 16 %} Filter</button>{% if active_filters %}<a class="btn" href="{% url 'vault:documents' %}">Clear</a>{% endif %}</div>
+  </div>
+</form>
+
+<div class="card" data-bulk>
+  <form id="bulk-form" method="post" action="{% url 'vault:bulk' %}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <div class="bulkbar">
+      <strong data-bulk-count>0 selected</strong>
+      <select class="input" name="action" data-bulk-action aria-label="Bulk action">
+        <option value="">Choose action…</option><option value="favorite">Add to favourites</option><option value="unfavorite">Remove from favourites</option>
+        <option value="archive">Archive</option><option value="unarchive">Unarchive</option><option value="move">Move to folder…</option><option value="tag">Add tag…</option><option value="trash">Move to trash</option>
+      </select>
+      <select class="input hidden" name="folder" data-bulk-folder aria-label="Target folder"><option value="">No folder</option>{% for fo in folders %}<option value="{{ fo.pk }}">{{ fo.path }}</option>{% endfor %}</select>
+      <input class="input hidden" name="tag" data-bulk-tag placeholder="tag name" aria-label="Tag name">
+      <button class="btn btn-sm" type="submit">Apply</button>
+    </div>
+  </form>
+
+  {% if page.object_list %}
+    {% if view_mode == 'grid' %}
+    <div class="doc-grid">
+      {% for d in page %}
+      <article class="doc-card">
+        <div class="row between"><span class="doc-icon">{% category_icon d.category 18 %}</span>
+          <span class="row"><input class="checkbox" type="checkbox" name="ids" value="{{ d.pk }}" form="bulk-form" aria-label="Select {{ d.title }}">
+          <form class="inline-form" method="post" action="{% url 'vault:favorite' d.pk %}" data-favorite>{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="star {% if d.is_favorite %}on{% endif %}" type="submit" aria-label="Toggle favourite">{% icon "star" 18 %}</button></form></span></div>
+        <a class="doc-title" href="{{ d.get_absolute_url }}">{{ d.title }}</a>
+        <div class="doc-meta">{{ d.get_category_display }}{% if d.folder %} · {{ d.folder.name }}{% endif %}<br>{{ d.size|filesizeformat }} · v{{ d.version }} · {{ d.updated_at|naturaltime }}</div>
+        <div class="row">{% expiry_badge d %}{% if d.status == 'archived' %}<span class="badge">Archived</span>{% endif %}{% if d.sensitivity != 'standard' %}<span class="badge badge-brass">{% icon "lock" 12 %} {{ d.sensitivity|title }}</span>{% endif %}</div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th class="col-check"><input class="checkbox" type="checkbox" data-select-all aria-label="Select all"></th><th>Document</th><th>Category</th><th>Tags</th><th>Expiry</th><th>Updated</th><th></th></tr></thead>
+      <tbody>
+      {% for d in page %}
+      <tr>
+        <td class="col-check"><input class="checkbox" type="checkbox" name="ids" value="{{ d.pk }}" form="bulk-form" aria-label="Select {{ d.title }}"></td>
+        <td><div class="cell-doc"><span class="doc-icon">{% category_icon d.category 18 %}</span><div><a class="doc-title" href="{{ d.get_absolute_url }}">{{ d.title }}</a>
+          <div class="doc-meta">{{ d.original_name|truncatechars:34 }} · {{ d.size|filesizeformat }} · v{{ d.version }}{% if d.folder %} · <a href="{{ d.folder.get_absolute_url }}">{{ d.folder.name }}</a>{% endif %}</div></div></div></td>
+        <td>{{ d.get_category_display }}{% if d.status == 'archived' %} <span class="badge">Archived</span>{% endif %}{% if d.sensitivity != 'standard' %} <span class="badge badge-brass">{% icon "lock" 12 %}</span>{% endif %}</td>
+        <td><div class="chips">{% for t in d.tags.all|slice:":3" %}<a class="chip tag" href="?{% url_replace tag=t.name page='' %}">{{ t.name }}</a>{% endfor %}</div></td>
+        <td>{% expiry_badge d %}</td>
+        <td class="muted small nowrap">{{ d.updated_at|naturaltime }}</td>
+        <td class="right"><form class="inline-form" method="post" action="{% url 'vault:favorite' d.pk %}" data-favorite>{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="star {% if d.is_favorite %}on{% endif %}" type="submit" aria-label="Toggle favourite">{% icon "star" 18 %}</button></form></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% endif %}
+    {% include "partials/_pagination.html" %}
+  {% else %}
+    <div class="empty">{% icon "search" 38 %}<h3>{% if active_filters %}No documents match these filters{% else %}No documents yet{% endif %}</h3>
+      <p>{% if active_filters %}Try widening your search or clearing the filters.{% else %}Upload a document to seal it in your vault.{% endif %}</p>
+      {% if active_filters %}<a class="btn" href="{% url 'vault:documents' %}">Clear filters</a>{% else %}<a class="btn btn-primary" href="{% url 'vault:upload' %}">Upload a document</a>{% endif %}</div>
+  {% endif %}
+</div>
+{% endblock %}

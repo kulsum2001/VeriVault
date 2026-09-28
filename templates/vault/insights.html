@@ -1,0 +1,66 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras humanize %}
+{% block title %}Vault health · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Vault health</h1><p class="sub">A rule-based review of your vault - no external AI, just transparent checks.</p></div>
+  <form method="post" action="{% url 'vault:verify_all' %}">{% csrf_token %}<button class="btn btn-primary" type="submit">{% icon "fingerprint" 16 %} Verify every document</button></form></div>
+
+<div class="split">
+  <div class="col">
+    <div class="card">
+      <div class="card-head"><h2>Recommendations</h2><span class="badge">{{ health.recommendations|length }}</span></div>
+      {% for r in health.recommendations %}
+      <div class="rec {{ r.level }}"><span class="lvl"></span><div style="flex:1"><strong>{{ r.title }}</strong><div class="muted small">{{ r.detail }}</div></div>{% if r.url %}<a class="btn btn-sm" href="{{ r.url }}">Open</a>{% endif %}</div>
+      {% empty %}<div class="empty">{% icon "check" 38 %}<h3>Nothing to fix</h3><p>Your vault is in excellent shape.</p></div>{% endfor %}
+    </div>
+
+    <div class="card" id="essentials">
+      <div class="card-head"><h2>Essentials checklist</h2><span class="muted small">Common documents worth having on file</span></div>
+      <div class="card-body">
+        {% for c in health.checklist %}
+        <div class="check-item"><span class="tick {% if not c.present %}no{% endif %}">{% if c.present %}{% icon "check" 14 %}{% endif %}</span>
+          <div style="flex:1"><strong>{{ c.label }}</strong> <span class="muted small">· {{ c.category_label }}</span></div>
+          {% if c.present %}<a class="small" href="{{ c.document.get_absolute_url }}">{{ c.document.title|truncatechars:30 }}</a>{% else %}<a class="btn btn-sm" href="{% url 'vault:upload' %}">Add</a>{% endif %}</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card" id="duplicates">
+      <div class="card-head"><h2>Duplicate files</h2></div>
+      {% for group in duplicates %}
+      <div class="card-body" style="border-bottom:1px solid var(--line)"><div class="muted small" style="margin-bottom:.4rem">Identical content - <code>{{ group.0.sha256|mask_hash:6 }}</code></div>
+        {% for d in group %}<div class="row between" style="padding:.25rem 0"><a href="{{ d.get_absolute_url }}">{{ d.title }}</a><span class="muted small">{{ d.original_name }} · added {{ d.created_at|date:"d M Y" }}</span></div>{% endfor %}</div>
+      {% empty %}<div class="empty"><p>No duplicate files found.</p></div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card card-body">
+      <div class="row" style="gap:1.2rem;flex-wrap:nowrap">
+        <div class="ring {% if health.score < 55 %}danger{% elif health.score < 75 %}warn{% endif %}" data-ring="{{ health.score }}"><div><strong>{{ health.score }}</strong><span>of 100</span></div></div>
+        <div><h3 style="margin-bottom:.2rem">{{ health.grade }}</h3><p class="muted small" style="margin:0">Based on {{ health.document_count }} document{{ health.document_count|pluralize }}.</p></div>
+      </div>
+      <hr>
+      <p class="small muted" style="margin:0">Scoring starts at 100. Points come off for expired or soon-to-expire documents, failed integrity checks, duplicates, never-expiring share links, critical documents shared publicly, nearly full storage, missing 2FA and missing essentials.</p>
+    </div>
+    <div class="card card-body">
+      <h3>Expiry radar</h3>
+      {% for d in expiry.expired %}<div class="row between" style="padding:.3rem 0"><a href="{{ d.get_absolute_url }}">{{ d.title|truncatechars:26 }}</a>{% expiry_badge d %}</div>{% endfor %}
+      {% for d in expiry.soon %}<div class="row between" style="padding:.3rem 0"><a href="{{ d.get_absolute_url }}">{{ d.title|truncatechars:26 }}</a>{% expiry_badge d %}</div>{% endfor %}
+      {% if not expiry.expired and not expiry.soon %}<p class="muted small" style="margin:0">Nothing expires in the next {{ expiry.days }} days.</p>{% endif %}
+    </div>
+    <div class="card card-body">
+      <h3>Integrity</h3>
+      <p class="small muted">{{ checked }} document{{ checked|pluralize }} have been checked at least once.</p>
+      {% for d in failed %}<div class="badge badge-danger" style="margin:.2rem 0">{{ d.title }}</div>{% endfor %}
+      <div class="progress" style="margin-top:.5rem"><span class="bar" data-width="{{ profile.storage_percent }}"></span></div>
+      <p class="small muted" style="margin:.4rem 0 0">Storage: {{ profile.storage_used|filesizeformat }} of {{ profile.storage_quota_mb }} MB</p>
+    </div>
+    <div class="card card-body">
+      <h3>Open share links</h3>
+      {% for l in links %}<div class="row between" style="padding:.3rem 0"><a href="{{ l.document.get_absolute_url }}#sharing">{{ l.document.title|truncatechars:22 }}</a><span class="badge {% if not l.expires_at %}badge-warn{% endif %}">{% if l.expires_at %}{{ l.expires_at|naturaltime }}{% else %}no expiry{% endif %}</span></div>
+      {% empty %}<p class="muted small" style="margin:0">No active links.</p>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

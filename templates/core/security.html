@@ -1,0 +1,26 @@
+{% extends "layouts/public.html" %}
+{% load vault_extras %}
+{% block title %}Security · {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}How VeriVault protects documents: private storage, permission-checked downloads, SHA-256 integrity checks, two-factor authentication and audit logging.{% endblock %}
+{% block content %}
+<section class="section"><div class="container prose">
+  <h1>Security, stated plainly</h1>
+  <p class="muted">A vault earns trust by being specific about what it does and does not do.</p>
+  <h2>What VeriVault does</h2>
+  <ul>
+    <li><strong>Private file storage.</strong> Documents are saved outside the public web root. Every download passes an ownership or share check.</li>
+    <li><strong>Integrity fingerprints.</strong> A SHA-256 hash is recorded on upload and for every version, and can be rechecked at any time.</li>
+    <li><strong>Two-factor authentication.</strong> Optional authenticator-app codes (TOTP, RFC 6238) on sign-in.</li>
+    <li><strong>Re-authentication.</strong> Sensitive and critical documents ask for your password before download.</li>
+    <li><strong>Brute-force throttling.</strong> Repeated failed sign-ins from the same address are temporarily blocked.</li>
+    <li><strong>Hardened defaults.</strong> Content-Security-Policy, secure cookies, CSRF protection, blocked executable uploads and safe inline preview rules.</li>
+    <li><strong>Audit trail.</strong> Views, downloads, shares, verifications and sign-ins are recorded with time and IP address.</li>
+  </ul>
+  <h2>What it does not do</h2>
+  <ul>
+    <li>It does not add its own encryption at rest. Use full-disk encryption on the server that hosts it.</li>
+    <li>It does not replace HTTPS. Serve it over TLS in any real deployment.</li>
+    <li>It is not a legal e-signature or notarisation service. A certificate proves a file is unchanged since upload, not that its contents are true.</li>
+  </ul>
+</div></section>
+{% endblock %}

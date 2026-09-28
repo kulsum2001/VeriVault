@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load static vault_extras %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block layout %}
+{% with route=request.resolver_match.url_name %}
+<div class="app">
+  <aside class="sidebar" aria-label="Sidebar">
+    <a class="brand" href="{% url 'vault:dashboard' %}">{% include "partials/_logo.html" %}{{ SITE_NAME }}</a>
+    <nav>
+      <div class="nav-group">
+        <h4>Overview</h4>
+        <a class="nav-link {% if route == 'dashboard' %}active{% endif %}" href="{% url 'vault:dashboard' %}">{% icon "home" 18 %} Dashboard</a>
+        <a class="nav-link {% if route == 'insights' %}active{% endif %}" href="{% url 'vault:insights' %}">{% icon "pulse" 18 %} Vault health</a>
+      </div>
+      <div class="nav-group">
+        <h4>Library</h4>
+        <a class="nav-link {% if route == 'documents' or route == 'detail' or route == 'edit' or route == 'version_new' %}active{% endif %}" href="{% url 'vault:documents' %}">{% icon "file" 18 %} Documents</a>
+        <a class="nav-link {% if route == 'upload' %}active{% endif %}" href="{% url 'vault:upload' %}">{% icon "upload" 18 %} Upload</a>
+        <a class="nav-link {% if route == 'folders' or route == 'folder_edit' %}active{% endif %}" href="{% url 'vault:folders' %}">{% icon "folder" 18 %} Folders</a>
+        <a class="nav-link {% if route == 'tags' %}active{% endif %}" href="{% url 'vault:tags' %}">{% icon "tag" 18 %} Tags</a>
+        <a class="nav-link {% if route == 'shared_with_me' %}active{% endif %}" href="{% url 'vault:shared_with_me' %}">{% icon "users" 18 %} Shared with me</a>
+        <a class="nav-link {% if route == 'trash' %}active{% endif %}" href="{% url 'vault:trash' %}">{% icon "trash" 18 %} Trash</a>
+      </div>
+      <div class="nav-group">
+        <h4>Trust</h4>
+        <a class="nav-link {% if route == 'activity' %}active{% endif %}" href="{% url 'vault:activity' %}">{% icon "activity" 18 %} Activity log</a>
+        <a class="nav-link {% if route == 'notifications' %}active{% endif %}" href="{% url 'vault:notifications' %}">{% icon "bell" 18 %} Notifications{% if UNREAD_NOTIFICATIONS %}<span class="count">{{ UNREAD_NOTIFICATIONS }}</span>{% endif %}</a>
+        <a class="nav-link {% if route == 'verify' %}active{% endif %}" href="{% url 'vault:verify' %}">{% icon "seal" 18 %} Verify a document</a>
+      </div>
+      <div class="nav-group">
+        <h4>Account</h4>
+        <a class="nav-link {% if route == 'profile' %}active{% endif %}" href="{% url 'accounts:profile' %}">{% icon "user" 18 %} Profile</a>
+        <a class="nav-link {% if route == 'security' or route == 'twofa_setup' %}active{% endif %}" href="{% url 'accounts:security' %}">{% icon "lock" 18 %} Security &amp; API</a>
+        <a class="nav-link" href="{% url 'api:docs' %}">{% icon "key" 18 %} API reference</a>
+      </div>
+    </nav>
+    <div class="sidebar-foot sidebar-storage">
+      {% with p=user.profile %}
+      <div class="row between"><span>Storage</span><span>{{ p.storage_used|filesizeformat }} / {{ p.storage_quota_mb }} MB</span></div>
+      <div class="progress" role="progressbar" aria-valuenow="{{ p.storage_percent }}" aria-valuemin="0" aria-valuemax="100"><span class="bar" data-width="{{ p.storage_percent }}"></span></div>
+      {% endwith %}
+    </div>
+  </aside>
+  <div class="scrim"></div>
+  <div class="main">
+    <header class="topbar">
+      <button class="btn btn-icon menu-btn" type="button" data-menu-toggle aria-label="Open menu">{% icon "menu" 20 %}</button>
+      <form class="search" action="{% url 'vault:documents' %}" method="get" role="search">
+        {% icon "search" 16 %}
+        <input class="input" type="search" name="q" value="{{ request.GET.q }}" placeholder="Search documents, tags, issuers…" autocomplete="off" aria-label="Search documents" data-search data-suggest-url="{% url 'vault:suggest' %}">
+        <div class="suggest hidden"></div>
+      </form>
+      <div class="spacer"></div>
+      <a class="btn btn-primary hide-sm" href="{% url 'vault:upload' %}">{% icon "upload" 16 %} Upload</a>
+      <button class="btn btn-ghost btn-icon" type="button" data-theme-toggle aria-label="Toggle dark mode">{% icon "moon" 18 %}</button>
+      <a class="btn btn-ghost btn-icon bell" href="{% url 'vault:notifications' %}" aria-label="Notifications">{% icon "bell" 18 %}{% if UNREAD_NOTIFICATIONS %}<span class="dot">{{ UNREAD_NOTIFICATIONS }}</span>{% endif %}</a>
+      <div class="dropdown">
+        <button class="btn btn-ghost" type="button" data-dropdown aria-haspopup="true" aria-expanded="false" style="padding:.25rem">
+          <span class="avatar">{% if user.profile.avatar %}<img src="{{ user.profile.avatar.url }}" alt="">{% else %}{{ user.profile.initials }}{% endif %}</span>
+        </button>
+        <div class="dropdown-menu">
+          <div style="padding:.5rem .65rem"><strong>{{ user.profile.name }}</strong><br><span class="muted small">{{ user.email|default:user.username }}</span></div>
+          <hr>
+          <a href="{% url 'accounts:profile' %}">{% icon "user" 16 %} Profile</a>
+          <a href="{% url 'accounts:security' %}">{% icon "lock" 16 %} Security</a>
+          {% if user.is_staff %}<a href="{% url 'admin:index' %}">{% icon "settings" 16 %} Admin</a>{% endif %}
+          <hr>
+          <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">{% icon "logout" 16 %} Sign out</button></form>
+        </div>
+      </div>
+    </header>
+    <main id="main" class="page">{% block content %}{% endblock %}</main>
+  </div>
+</div>
+{% endwith %}
+{% endblock %}

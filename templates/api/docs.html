@@ -1,0 +1,45 @@
+{% extends "layouts/public.html" %}
+{% block title %}API reference · {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}VeriVault JSON API reference: token authentication, documents, folders, tags, sharing, insights and public verification.{% endblock %}
+{% block content %}
+<section class="section" style="padding-top:2.5rem"><div class="container prose" style="max-width:860px">
+  <h1>API reference</h1>
+  <p class="muted">JSON over HTTP, base path <code>/api/v1/</code>. No third-party packages required.</p>
+
+  <h2>Authentication</h2>
+  <p>Create a token under <a href="{% url 'accounts:security' %}">Security &amp; API</a>, or exchange credentials (accounts without 2FA):</p>
+  <div class="code-block">curl -X POST {{ SITE_URL }}/api/v1/auth/token/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "demo", "password": "Demo@12345"}'</div>
+  <p>Send it on every request: <code>Authorization: Token vv_xxxxxxxx</code>. Signed-in browser sessions may also call read-only (GET) endpoints.</p>
+
+  <h2>Example</h2>
+  <div class="code-block"># list documents expiring soon, newest first
+curl -H "Authorization: Token $TOKEN" "{{ SITE_URL }}/api/v1/documents/?expiry=soon&amp;sort=expiry"
+
+# upload
+curl -H "Authorization: Token $TOKEN" -F file=@passport.pdf -F title="Passport" -F category=identity \
+  -F tags="travel, id" {{ SITE_URL }}/api/v1/documents/
+
+# update
+curl -X PATCH -H "Authorization: Token $TOKEN" -H "Content-Type: application/json" \
+  -d '{"expiry_date": "2031-05-01", "is_favorite": true}' {{ SITE_URL }}/api/v1/documents/12/
+
+# verify a fingerprint publicly (no token)
+curl -X POST -H "Content-Type: application/json" -d '{"code": "VV-ABCD-EFGH-JKMN", "sha256": "…64 hex…"}' {{ SITE_URL }}/api/v1/verify/</div>
+
+  <h2>Endpoints</h2>
+  <div>
+    {% for m, path, desc in endpoints %}<div class="endpoint"><span class="method {{ m|lower }}">{{ m }}</span><code>{{ path }}</code><span class="muted small">{{ desc }}</span></div>{% endfor %}
+  </div>
+
+  <h2>Conventions</h2>
+  <ul>
+    <li><strong>Pagination:</strong> <code>?page=2&amp;page_size=25</code> (max 100). Responses include <code>count</code>, <code>next</code>, <code>previous</code>, <code>results</code>.</li>
+    <li><strong>Filters</strong> on <code>/documents/</code>: <code>q, category, folder, tag, status, favorite, expiry (expired|soon|valid|none), sensitivity, sort</code>.</li>
+    <li><strong>Errors:</strong> <code>{"error": {"status": 400, "message": "…", "fields": {"title": ["…"]}}}</code>.</li>
+    <li>Write requests (POST/PATCH/DELETE) require a token. PATCH bodies are JSON or form-encoded.</li>
+    <li>Critical documents cannot be downloaded through the API or shared by link.</li>
+  </ul>
+</div></section>
+{% endblock %}

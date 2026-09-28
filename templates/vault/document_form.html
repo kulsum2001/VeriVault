@@ -1,0 +1,63 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras %}
+{% block title %}{% if mode == 'upload' %}Upload a document{% else %}Edit {{ doc.title }}{% endif %} · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{% url 'vault:documents' %}">Documents</a> / {% if mode == 'upload' %}Upload{% else %}<a href="{{ doc.get_absolute_url }}">{{ doc.title }}</a> / Edit{% endif %}</div>
+    <h1>{% if mode == 'upload' %}Upload a document{% else %}Edit details{% endif %}</h1>
+    <p class="sub">{% if mode == 'upload' %}VeriVault fingerprints the file and suggests a category, tags and expiry from its name.{% else %}Update the record. To replace the file itself, upload a new version.{% endif %}</p>
+  </div>
+</div>
+<form method="post" {% if mode == 'upload' %}enctype="multipart/form-data" data-upload-form data-suggest-url="{% url 'vault:suggest_metadata' %}"{% endif %} novalidate>
+  {% csrf_token %}
+  <div class="split">
+    <div class="card"><div class="card-body">
+      {% include "partials/_form_errors.html" %}
+      {% if mode == 'upload' %}
+      <div class="field">
+        <label for="{{ form.file.id_for_label }}">File *</label>
+        <div class="dropzone" data-dropzone>
+          {% icon "upload" 30 %}
+          <div data-file-label><strong>Drop a file here</strong> or choose one below</div>
+          <div class="help" style="margin-top:.4rem">Up to 25 MB. Executables and scripts are blocked.</div>
+        </div>
+        <div style="margin-top:.6rem">{{ form.file }}</div>
+        <div class="mono small muted" data-local-hash style="word-break:break-all;margin-top:.4rem"></div>
+        {{ form.file.errors }}
+      </div>
+      <div class="suggestion-box hidden" data-suggestion></div>
+      {% endif %}
+      <div class="form-grid">
+        <div class="full">{% include "partials/_field.html" with field=form.title %}</div>
+        {% include "partials/_field.html" with field=form.category %}
+        {% include "partials/_field.html" with field=form.folder %}
+        <div class="full">{% include "partials/_field.html" with field=form.description %}</div>
+        {% include "partials/_field.html" with field=form.issuer %}
+        {% include "partials/_field.html" with field=form.reference_number %}
+        {% include "partials/_field.html" with field=form.issue_date %}
+        {% include "partials/_field.html" with field=form.expiry_date %}
+        <div class="full">{% include "partials/_field.html" with field=form.tags_text %}</div>
+        <div class="full">{% include "partials/_field.html" with field=form.sensitivity %}</div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">{% if mode == 'upload' %}{% icon "shield" 16 %} Seal in vault{% else %}Save changes{% endif %}</button>
+        <a class="btn" href="{% if mode == 'upload' %}{% url 'vault:documents' %}{% else %}{{ doc.get_absolute_url }}{% endif %}">Cancel</a>
+      </div>
+    </div></div>
+    <div class="col">
+      <div class="card card-body">
+        <h3>How sensitivity works</h3>
+        <p class="small muted"><strong>Standard</strong> - normal access.<br><strong>Sensitive</strong> - your password is requested before download or preview.<br><strong>Critical</strong> - as sensitive, and it can never be shared by public link.</p>
+      </div>
+      {% if mode == 'upload' %}
+      <div class="card card-body">
+        <h3>Storage</h3>
+        <div class="progress"><span class="bar" data-width="{{ profile.storage_percent }}"></span></div>
+        <p class="small muted" style="margin:.5rem 0 0">{{ profile.storage_used|filesizeformat }} of {{ profile.storage_quota_mb }} MB used</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,9 @@
+<svg viewBox="0 0 120 120" role="img" aria-label="{{ seal_label|default:'Verified seal' }}">
+  <defs><path id="sealpath{{ seal_id|default:'a' }}" d="M60 60 m-43 0 a43 43 0 1 1 86 0 a43 43 0 1 1 -86 0"/></defs>
+  <circle cx="60" cy="60" r="55" fill="none" stroke="currentColor" stroke-width="2.2" stroke-dasharray="2 4"/>
+  <circle cx="60" cy="60" r="49" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <circle cx="60" cy="60" r="33" fill="none" stroke="currentColor" stroke-width="1.6"/>
+  <text font-family="Georgia, serif" font-size="10.5" font-weight="700" letter-spacing="3.2" fill="currentColor"><textPath href="#sealpath{{ seal_id|default:'a' }}" startOffset="2%">{{ seal_text|default:'VERIVAULT · VERIFIED · SHA-256 · ' }}</textPath></text>
+  {% if seal_bad %}<path d="M46 46l28 28M74 46L46 74" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+  {% else %}<path d="M46 61l10 10 20-22" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>{% endif %}
+</svg>

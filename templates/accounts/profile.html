@@ -1,0 +1,50 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras %}
+{% block title %}Profile · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Profile</h1><p class="sub">Your name, contact details and alert preferences.</p></div></div>
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  <div class="split">
+    <div class="card">
+      <div class="card-head"><h2>Personal details</h2></div>
+      <div class="card-body">
+        {% include "partials/_form_errors.html" with form=user_form %}
+        {% include "partials/_form_errors.html" with form=profile_form %}
+        <div class="form-grid">
+          {% include "partials/_field.html" with field=profile_form.display_name %}
+          {% include "partials/_field.html" with field=user_form.email %}
+          {% include "partials/_field.html" with field=user_form.first_name %}
+          {% include "partials/_field.html" with field=user_form.last_name %}
+          {% include "partials/_field.html" with field=profile_form.phone %}
+          {% include "partials/_field.html" with field=profile_form.organization %}
+          <div class="full">{% include "partials/_field.html" with field=profile_form.bio %}</div>
+          {% include "partials/_field.html" with field=profile_form.timezone %}
+          {% include "partials/_field.html" with field=profile_form.expiry_alert_days %}
+          <div class="full">{% include "partials/_field.html" with field=profile_form.avatar %}</div>
+        </div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit">Save profile</button></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card card-body center">
+        <span class="avatar lg">{% if user.profile.avatar %}<img src="{{ user.profile.avatar.url }}" alt="">{% else %}{{ user.profile.initials }}{% endif %}</span>
+        <h3 style="margin:.7rem 0 0">{{ user.profile.name }}</h3>
+        <p class="muted small">@{{ user.username }} · joined {{ user.date_joined|date:"M Y" }}</p>
+        <div class="progress" role="progressbar"><span class="bar" data-width="{{ user.profile.storage_percent }}"></span></div>
+        <p class="small muted" style="margin:.4rem 0 0">{{ user.profile.storage_used|filesizeformat }} of {{ user.profile.storage_quota_mb }} MB used</p>
+      </div>
+      <div class="card card-body">
+        <h3>Your data</h3>
+        <p class="muted small">Download every active document plus a manifest of fingerprints.</p>
+        <a class="btn btn-block" href="{% url 'vault:export' %}">{% icon "download" 16 %} Export vault (ZIP)</a>
+      </div>
+      <div class="card card-body">
+        <h3>Danger zone</h3>
+        <p class="muted small">Permanently delete your account and every document in it.</p>
+        <a class="btn btn-danger btn-block" href="{% url 'accounts:delete' %}">Delete account…</a>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

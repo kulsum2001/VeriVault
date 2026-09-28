@@ -1,0 +1,18 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras %}
+{% block title %}Confirm your password · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div style="max-width:460px;margin:2rem auto">
+  <div class="card auth-card">
+    <h1>{% icon "lock" 22 %} Confirm it's you</h1>
+    <p class="muted">This document is marked sensitive. Re-enter your password to unlock sensitive documents for the next 10 minutes.</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      {% include "partials/_form_errors.html" %}
+      {% include "partials/_field.html" with field=form.password %}
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Unlock</button><a class="btn" href="{% url 'vault:documents' %}">Cancel</a></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

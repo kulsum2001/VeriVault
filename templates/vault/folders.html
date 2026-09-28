@@ -1,0 +1,27 @@
+{% extends "layouts/app.html" %}
+{% load vault_extras %}
+{% block title %}Folders · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Folders</h1><p class="sub">Nest folders to mirror how you think about your paperwork.</p></div></div>
+<div class="split">
+  <div class="card">
+    <div class="card-head"><h2>Your folders</h2></div>
+    {% for f in folders %}
+    <div class="tree-row" style="padding-left:{{ f.tree_depth|add:1 }}rem">
+      <span class="swatch {{ f.color }}"></span>
+      <a class="doc-title" href="{{ f.get_absolute_url }}">{{ f.name }}</a>
+      <span class="badge">{{ f.doc_count }}</span>
+      <span class="spacer"></span>
+      <a class="btn btn-sm" href="{% url 'vault:folder_edit' f.pk %}">Edit</a>
+      <form class="inline-form" method="post" action="{% url 'vault:folder_delete' f.pk %}" data-confirm="Delete this folder? Documents inside become unfiled; sub-folders move up a level.">{% csrf_token %}<button class="btn btn-sm btn-danger" type="submit">Delete</button></form>
+    </div>
+    {% empty %}<div class="empty">{% icon "folder" 38 %}<h3>No folders yet</h3><p>Create one on the right to start organising.</p></div>{% endfor %}
+    {% if unfiled %}<div class="tree-row"><span class="swatch slate"></span><a class="doc-title" href="{% url 'vault:documents' %}?folder=none">Unfiled documents</a><span class="badge">{{ unfiled }}</span></div>{% endif %}
+  </div>
+  <div class="card"><div class="card-head"><h2>New folder</h2></div><div class="card-body">
+    <form method="post" novalidate>{% csrf_token %}{% include "partials/_form_errors.html" %}
+      {% include "partials/_field.html" with field=form.name %}{% include "partials/_field.html" with field=form.parent %}{% include "partials/_field.html" with field=form.color %}
+      <button class="btn btn-primary" type="submit">{% icon "plus" 16 %} Create folder</button></form>
+  </div></div>
+</div>
+{% endblock %}
