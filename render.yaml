@@ -2,14 +2,10 @@ services:
   - type: web
     name: verivault
     runtime: python
-    plan: starter          # a paid plan is required for the persistent disk below
+    plan: free
     buildCommand: ./build.sh
     startCommand: "python manage.py migrate --noinput && gunicorn myproject.wsgi:application --bind 0.0.0.0:$PORT"
     healthCheckPath: /
-    disk:
-      name: verivault-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: VERIVAULT_SECRET_KEY
         generateValue: true
@@ -17,10 +13,6 @@ services:
         value: "False"
       - key: VERIVAULT_HTTPS
         value: "True"
-      - key: VERIVAULT_DATA_DIR
-        value: /var/data
-      # Set these two to your actual Render URL once you know it
-      # (Render shows it as soon as the service is created):
       - key: VERIVAULT_ALLOWED_HOSTS
         value: verivault.onrender.com
       - key: VERIVAULT_CSRF_TRUSTED_ORIGINS
